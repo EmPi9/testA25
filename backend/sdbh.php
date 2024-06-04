@@ -242,37 +242,43 @@ class sdbh {
 		$order = Null,
 		$deadlock_up = False,
 		$lock_mode = Null
-	){
-		if(is_null($lock_mode)){
+	) {
+		if (is_null($lock_mode)) {
 			$lock_str = "";
-		}else if($lock_mode == "LISH"){
+		} else if ($lock_mode == "LISH") {
 			$lock_str = "LOCK IN SHARE MODE";
-		}else if($lock_mode == "FU"){
+		} else if ($lock_mode == "FU") {
 			$lock_str = "FOR UPDATE";
-		}else{
+		} else {
 			throw new sdbh_exception("Unknown lock mode $lock_mode");
 		}
-		while(True) try{
-			$query=$this->query_exc("SELECT * FROM `$tbl_name` WHERE
-				".$this->make_str($select_array,'AND',$tbl_name)."
-				ORDER BY `$order_by` $order LIMIT ".intval($from).", ".intval($amount).
-				" $lock_str"
+		
+		$where_clause = "";
+		if (!empty($select_array)) {
+			$where_clause = "WHERE " . $this->make_str($select_array, 'AND', $tbl_name);
+		}
+	
+		while (True) try {
+			$query = $this->query_exc("SELECT * FROM `$tbl_name` $where_clause
+				ORDER BY `$order_by` $order LIMIT " . intval($from) . ", " . intval($amount) . "
+				$lock_str"
 			);
 			break;
-		}catch(sdbh_tables_exception $e){
+		} catch (sdbh_tables_exception $e) {
 			$query = false;
 			break;
-		}catch(sdbh_deadlock_exception $e){
-			if($deadlock_up){
+		} catch (sdbh_deadlock_exception $e) {
+			if ($deadlock_up) {
 				throw $e;
-			}else{
+			} else {
 				continue;
 			}
-		}catch(sdbh_lost_connection_exception $e){
+		} catch (sdbh_lost_connection_exception $e) {
 			continue;
 		}
 		return $this->get_all_assoc($query);
 	}
+	
 	
 	/**
 	 * Deletes rows from table
